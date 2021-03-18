@@ -7,12 +7,38 @@ pipeline {
     agent any
 
     stages {
-        stage('Building image') {
-            steps{
-            script {
-                docker.build(registry + ":$BUILD_NUMBER", "-f ./src/adservice/Dockerfile ./src/adservice")
+        stage('Build') {
+            agent {
+                kubernetes {
+                label 'jenkinsrun'
+                defaultContainer 'builder'
+                yaml """
+            kind: Pod
+            metadata:
+            name: kaniko
+            spec:
+            containers:
+            - name: builder
+                image: gcr.io/kaniko-project/executor:debug
+                imagePullPolicy: Always
+                command:
+                - /busybox/cat
+                tty: true
+                volumeMounts:
+                - name: docker-config
+                    mountPath: /kaniko/.docker
+            volumes:
+                - name: docker-config
+                configMap:
+                    name: docker-config
+            """
+                }
             }
-            }
-        }
+            steps {
+                script {
+                    sh "/kaniko/executor --dockerfile ./src/adservice/Dockerfile --context ./src/adservice --destination=artifactory:8081/adservice:${env.BUILD_ID}"
+                } //container
+            } //steps
+        } //stage(build)
     }
 }
