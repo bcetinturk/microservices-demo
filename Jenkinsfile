@@ -4,8 +4,6 @@ pipeline {
         registryCredential = 'dockerhub'
     }
 
-    agent any
-
     stages {
         stage('Build') {
             agent {
@@ -24,13 +22,6 @@ pipeline {
                 command:
                 - /busybox/cat
                 tty: true
-                volumeMounts:
-                - name: docker-config
-                    mountPath: /kaniko/.docker
-            volumes:
-                - name: docker-config
-                configMap:
-                    name: docker-config
             """
                 }
             }
